@@ -42,3 +42,24 @@ test_data  <- test_data[, !names(test_data) %in% exclude_cols]
 
 # Convert target variable 'classe' to factor
 train_data$classe <- as.factor(train_data$classe)
+
+#Cross Valdiation and Model building
+set.seed(123)
+control_cv <- trainControl(method = "cv", number = 5, allowParallel = TRUE)
+
+# Fit Random Forest Model
+model_rf <- train(classe ~ ., data = train_data, method = "rf", 
+                  trControl = control_cv, ntree = 100)
+
+print(model_rf)
+
+#Example Out-of-sample Error
+max_accuracy <- max(model_rf$results$Accuracy)
+expected_error <- (1 - max_accuracy) * 100
+
+cat(sprintf("Cross-Validation Accuracy: %.2f%%\n", max_accuracy * 100))
+cat(sprintf("Expected Out-of-Sample Error: %.2f%%\n", expected_error))
+
+#Predictions on #20 Test Cases
+quiz_predictions <- predict(model_rf, newdata = test_data)
+print(quiz_predictions)
