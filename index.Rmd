@@ -22,12 +22,33 @@ We load the training and testing datasets and clean them by removing near-zero-v
 library(caret)
 library(randomForest)
 
-# Load data
-train_url <- "[https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv](https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv)"
-test_url  <- "[https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv](https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv)"
+# Build URLs using raw character vectors to avoid markdown link replacement
+train_url <- paste0(
+  "ht", "tp", "s://", 
+  "d396", "qusz", "a40", "orc.", "cloud", "front.", "net/", 
+  "pred", "mach", "learn/", 
+  "pml-training.csv"
+)
 
-train_raw <- read.csv(url(train_url), na.strings=c("NA", "#DIV/0!", ""))
-test_raw  <- read.csv(url(test_url), na.strings=c("NA", "#DIV/0!", ""))
+test_url <- paste0(
+  "ht", "tp", "s://", 
+  "d396", "qusz", "a40", "orc.", "cloud", "front.", "net/", 
+  "pred", "mach", "learn/", 
+  "pml-testing.csv"
+)
+
+train_file <- "pml-training.csv"
+test_file  <- "pml-testing.csv"
+
+if (!file.exists(train_file)) {
+  download.file(train_url, train_file, method = "libcurl", quiet = TRUE)
+}
+if (!file.exists(test_file)) {
+  download.file(test_url, test_file, method = "libcurl", quiet = TRUE)
+}
+
+train_raw <- read.csv(train_file, na.strings=c("NA", "#DIV/0!", ""))
+test_raw  <- read.csv(test_file, na.strings=c("NA", "#DIV/0!", ""))
 
 # Remove columns with more than 90% missing values
 valid_cols <- colMeans(is.na(train_raw)) < 0.90
@@ -43,7 +64,6 @@ test_data  <- test_data[, !names(test_data) %in% exclude_cols]
 # Convert target variable 'classe' to factor
 train_data$classe <- as.factor(train_data$classe)
 
-#Cross Valdiation and Model building
 set.seed(123)
 control_cv <- trainControl(method = "cv", number = 5, allowParallel = TRUE)
 
@@ -53,13 +73,11 @@ model_rf <- train(classe ~ ., data = train_data, method = "rf",
 
 print(model_rf)
 
-#Example Out-of-sample Error
 max_accuracy <- max(model_rf$results$Accuracy)
 expected_error <- (1 - max_accuracy) * 100
 
 cat(sprintf("Cross-Validation Accuracy: %.2f%%\n", max_accuracy * 100))
 cat(sprintf("Expected Out-of-Sample Error: %.2f%%\n", expected_error))
 
-#Predictions on #20 Test Cases
 quiz_predictions <- predict(model_rf, newdata = test_data)
 print(quiz_predictions)
