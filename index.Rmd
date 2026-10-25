@@ -1,0 +1,44 @@
+---
+title: "Practical Machine Learning Course Project: Weight Lifting Exercise Analysis"
+author: "Peer Review Submission"
+output: 
+  html_document:
+    fig_width: 7
+    fig_height: 5
+    keep_md: false
+---
+
+## 1. Overview & Background
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit, it is now possible to collect a large amount of data about personal activity relatively inexpensively. In this project, our goal is to use data from accelerometers on the belt, forearm, arm, and dumbbell of 6 participants who were asked to perform barbell lifts correctly and incorrectly in 5 different ways (`classe` variable). 
+
+The training data contains 19,622 observations across 160 variables, and the testing data consists of 20 unlabelled test cases.
+
+---
+
+## 2. Data Preprocessing & Cleaning
+We load the training and testing datasets and clean them by removing near-zero-variance predictors, identification columns, and summary columns with over 90% missing values (`NA`).
+
+```{r setup, message=FALSE, warning=FALSE}
+library(caret)
+library(randomForest)
+
+# Load data
+train_url <- "[https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv](https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv)"
+test_url  <- "[https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv](https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv)"
+
+train_raw <- read.csv(url(train_url), na.strings=c("NA", "#DIV/0!", ""))
+test_raw  <- read.csv(url(test_url), na.strings=c("NA", "#DIV/0!", ""))
+
+# Remove columns with more than 90% missing values
+valid_cols <- colMeans(is.na(train_raw)) < 0.90
+train_data <- train_raw[, valid_cols]
+test_data  <- test_raw[, valid_cols]
+
+# Remove metadata columns (timestamps, user names, index)
+exclude_cols <- c("X", "user_name", "raw_timestamp_part_1", "raw_timestamp_part_2", 
+                  "cvtd_timestamp", "new_window", "num_window")
+train_data <- train_data[, !names(train_data) %in% exclude_cols]
+test_data  <- test_data[, !names(test_data) %in% exclude_cols]
+
+# Convert target variable 'classe' to factor
+train_data$classe <- as.factor(train_data$classe)
